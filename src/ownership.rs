@@ -1,1 +1,2 @@
-pub mod study;
+mod main;
+pub use main::start;
