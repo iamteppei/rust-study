@@ -53,4 +53,7 @@ cargo watch -w src -x "test ownership"
 
 # pattern matching
 cargo watch -w src -x "test pattern_matching"
+
+# functional programming
+cargo watch -w src -x "test functional_programming -- --nocapture"
 ```

@@ -21,7 +21,7 @@ fn test_enum() {
             assert_eq!("::1", str);
         }
         IpAddress::Other { value } => {
-            //
+            assert_ne!(value, "any");
         }
     }
 
@@ -35,7 +35,7 @@ fn test_enum() {
     }
 
     // OR using if let
-    if let IpAddress::V4(first, second, third, fourth) = &home {
+    if let IpAddress::V4(first, _, _, _) = &home {
         assert_eq!(first, &127);
     }
 }
