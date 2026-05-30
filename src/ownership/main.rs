@@ -1,113 +1,112 @@
-pub fn start() {
-    /*
-     * Stack vs Heap
-     * - Stack (First In Last Out): allocate memory for fixed or known size data so it's faster
-     * - Heap: allocate memory for unknown size data. It's slower and refered by using pointer
-     */
+pub fn start() {}
 
-    /* (1) Ownership is about MOVE or COPY */
+#[cfg(test)]
+mod tests {
+    fn calculate_len(s: String) -> (usize, String) {
+        (s.len(), s)
+    }
 
-    let msg1 = String::from("Hello world!");
-    let msg2 = msg1; // msg1 is moved into msg2, and msg1 is dropped (drop means free memory. it is handled automatically by Rust)
+    fn calculate_len_by_ref(s: &String) -> usize {
+        s.len()
+    }
 
-    // println!("{msg1}"); // error when refer to msg1 because it's drop
-    println!("{msg2}");
+    fn append_world(s: &mut String) {
+        s.push_str(", world!");
+    }
 
-    // copy value example
-    let count1 = 5;
-    let count2 = count1;
+    fn first_word(s: &str) -> &str {
+        let bytes = s.as_bytes();
+        for (i, &byte) in bytes.iter().enumerate() {
+            if byte == b' ' {
+                return &s[..i];
+            }
+        }
+        s
+    }
 
-    println!("{count1}"); // no error when refer to count1 because its value is COPIED. count1 is i32 (fixed size - signed 32 bit)
-    println!("{count2}");
+    // (1) Move: assigning a String to another binding transfers ownership.
+    // The original binding is no longer valid after the move.
+    #[test]
+    fn test_move_transfers_ownership() {
+        let msg1 = String::from("Hello world!");
+        let msg2 = msg1; // msg1 is moved into msg2
+        // msg1 is no longer accessible here
+        assert_eq!(msg2, "Hello world!");
+    }
 
-    // How to keep refer to value?
-    let msg1 = String::from("Hello world!");
+    // (2) Copy: primitive types that implement the Copy trait are copied on assignment.
+    // Both bindings remain valid.
+    #[test]
+    fn test_copy_keeps_original_valid() {
+        let count1 = 5_i32;
+        let count2 = count1; // i32 implements Copy, so count1 is copied
+        assert_eq!(count1, 5);
+        assert_eq!(count2, 5);
+    }
 
-    // msg1 is moved into calculate_len and transfered back by returning it
-    // this is called take-ownership and return-owership. it's tedious
-    let (length, msg2) = calculate_len(msg1);
+    // (3) Take and return ownership: one way to use a value in a function and keep access to it
+    // is to take ownership and return it back alongside the result.
+    #[test]
+    fn test_take_and_return_ownership() {
+        let msg1 = String::from("Hello world!");
+        let (length, msg2) = calculate_len(msg1);
+        // msg1 was moved into calculate_len, but returned back as msg2
+        assert_eq!(length, 12);
+        assert_eq!(msg2, "Hello world!");
+    }
 
-    println!("{msg2} length {length}");
+    // (4) Borrowing: use & to pass a reference instead of moving the value.
+    // The function borrows the value without taking ownership.
+    #[test]
+    fn test_borrow_does_not_move() {
+        let msg1 = String::from("Hello world!");
+        let length = calculate_len_by_ref(&msg1); // msg1 is borrowed, not moved
+        assert_eq!(length, 12);
+        assert_eq!(msg1, "Hello world!"); // msg1 is still valid
+    }
 
-    // Another approach is use Reference - like a pointer, use & operator. It's call Borrowing.
-    let msg1 = String::from("Hello world!");
+    // (5) Mutable reference: use &mut to allow a function to modify a borrowed value.
+    // Only one mutable reference to a value may exist at a time.
+    #[test]
+    fn test_mutable_reference_allows_mutation() {
+        let mut msg1 = String::from("Hello");
+        append_world(&mut msg1);
+        assert_eq!(msg1, "Hello, world!");
+    }
 
-    let length = calculate_len_use_reference(&msg1); // rust create a reference to msg1 but do not own it.
-    println!("{length}");
-    println!("{msg1}"); // no error. calculate_len_use_reference returns back the ownership when it's done
+    // (6) Multiple immutable references: any number of shared (&) references may coexist
+    // as long as no mutable reference is active at the same time.
+    #[test]
+    fn test_multiple_immutable_references_are_allowed() {
+        let msg1 = String::from("Hello");
+        let msg2 = &msg1;
+        let msg3 = &msg1;
+        assert_eq!(msg2, msg3);
+    }
 
-    // now, what happen when calculate_len_use_reference try to modify a borrowing variable?
-    // ..
-    // it's not allowed. Borrowing is not ownership and reference is immutable like the orthers
+    // (7) Mutable reference after immutable references go out of scope:
+    // once all immutable borrows are done, a mutable borrow is permitted.
+    #[test]
+    fn test_mutable_reference_allowed_after_immutable_scope_ends() {
+        let mut msg1 = String::from("Hello");
+        {
+            let msg2 = &msg1;
+            let msg3 = &msg1;
+            assert_eq!(msg2, msg3); // immutable borrows used and dropped here
+        }
+        let msg4 = &mut msg1; // mutable borrow is now allowed
+        msg4.push_str(", world!");
+        assert_eq!(msg1, "Hello, world!");
+    }
 
-    // what if we want to modify the value of borrowing data?
-    // ..
-    // Use mutable references - &mut <variable-name>
-    let mut msg1 = String::from("Hello");
-
-    change(&mut msg1);
-    println!("{msg1}");
-
-    // Mutable reference has restriction: can not borrow mutable reference more than 1 at a time
-    let mut s1 = String::from("Hello");
-
-    let s2 = &mut s1;
-    // let s3 = &mut s1; // this cause an error because you can only have 1 mutable reference to variable at a time
-
-    println!("{s2}");
-
-    // why do this? to prevent date race - multi mutate data at the same time
-
-    // Check this code
-    let msg1 = String::from("Hello");
-
-    let msg2 = &msg1; // no issue. msg2 borrow msg1. It's immutable
-    let msg3 = &msg1; // no issue. msg3 borrow msg1. It's immutable
-
-    // let msg4 = &mut msg1; // It's not allowed, else msg2 and msg2 may refer to a changed value
-    println!("{msg2} and {msg3} and {msg1}");
-
-    // Now, continue checking this code
-    let mut msg1 = String::from("Hello world!");
-
-    let msg2 = &msg1; // No issue
-    let msg3 = &msg1; // No issue
-
-    println!("{msg2} and {msg3}");
-    // msg1 and msg2 are dropped at this step. they are out of scope
-
-    let msg3 = &mut msg1; // this is now okay because msg2 and msg2 are dropped
-    println!("{msg3}");
-
-    /*
-     * Dangling reference: a pointer that references a location in memory that may have been given to someone else.
-     */
-
-    // GOOD NEWS: Rust preventing this
-    // let reference = dangle();
-
-    // fn dangle() -> &String {
-    //     let s = String::from("Hello world!");
-    //     &s
-    // } // s is out of scope so its memory is dropped <-- refer to s is danger
-
-    /*
-     * Slice Type. Slice refer to a contiguous sequence of elements in a collection.
-     * A slice is a reference so it does not have ownership.
-     */
-}
-
-fn calculate_len(s: String) -> (usize, String) {
-    // calculate len and return back value of s
-    (s.len(), s)
-}
-
-fn calculate_len_use_reference(s: &String) -> usize {
-    // this mean s does not have ownership of what it refers to
-    s.len()
-    // because s does not have ownership, it is not dropped when out of scope
-}
-
-fn change(s: &mut String) {
-    s.push_str(", world!");
+    // (8) Slice type: a slice is a reference to a contiguous sequence of elements.
+    // It does not own the data.
+    #[test]
+    fn test_slice_does_not_own_data() {
+        let sentence = String::from("Hello world");
+        let word = first_word(&sentence); // &str slice borrows from sentence
+        assert_eq!(word, "Hello");
+        // sentence is still valid because slice only borrows it
+        assert_eq!(sentence, "Hello world");
+    }
 }
