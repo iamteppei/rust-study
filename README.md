@@ -5,6 +5,7 @@ A hands-on Rust learning project exploring core language concepts through annota
 ## Topics Covered
 
 ### Ownership
+
 Located in `src/ownership/study.rs`.
 
 - **Stack vs Heap** — fixed-size data lives on the stack; dynamically sized data lives on the heap and is accessed via pointers.
@@ -44,14 +45,12 @@ Install `cargo-watch`:
 cargo install cargo-watch
 ```
 
-Start the watcher:
+Start modules
 
 ```bash
-cargo watch -w src -x run
-```
+# ownership
+cargo watch -w src -x "test ownership"
 
-Start Pattern Matching Test
-
-```bash
+# pattern matching
 cargo watch -w src -x "test pattern_matching"
 ```
