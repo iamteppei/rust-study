@@ -49,3 +49,9 @@ Start the watcher:
 ```bash
 cargo watch -w src -x run
 ```
+
+Start Pattern Matching Test
+
+```bash
+cargo watch -w src -x "test pattern_matching"
+```
