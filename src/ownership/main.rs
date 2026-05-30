@@ -60,7 +60,7 @@ mod tests {
     #[test]
     fn test_borrow_does_not_move() {
         let msg1 = String::from("Hello world!");
-        let length = calculate_len_by_ref(&msg1); // msg1 is borrowed, not moved
+        let length = calculate_len_by_ref(&msg1); // msg1 is borrowed, not moved, or a reference to msg1
         assert_eq!(length, 12);
         assert_eq!(msg1, "Hello world!"); // msg1 is still valid
     }
